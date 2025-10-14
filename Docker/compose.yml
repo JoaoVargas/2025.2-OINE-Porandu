@@ -1,0 +1,41 @@
+services:
+  backend:
+    build:
+      context: ../Backend
+    networks:
+      - porandu-network
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../Backend:/app
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: ../Frontend
+    networks:
+      - porandu-network
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../Frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    ports:
+      - "8000:8000"
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  portainer_data:
+
+networks:
+  porandu-network:
+    driver: bridge
