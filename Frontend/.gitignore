@@ -7,3 +7,6 @@ count.txt
 .env
 .nitro
 .tanstack
+yarn.lock
+yarn.lock.old
+package-lock.json
