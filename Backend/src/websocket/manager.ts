@@ -1,5 +1,7 @@
 import http from "http";
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
+import { questions } from "../utils/Questions";
+import { Game } from "../types/General";
 
 export const initializeWebSocket = (server: http.Server) => {
   const io = new Server(server, {
@@ -9,30 +11,7 @@ export const initializeWebSocket = (server: http.Server) => {
     },
   });
 
-  interface Game {
-    hostId: Socket["id"];
-    players: { id: string; name: string; score: number }[];
-    currentQuestionIndex: number;
-    questions: { question: string; options: string[]; answer: string }[];
-  }
   const games: { [key: string]: Game } = {};
-  const questions = [
-    {
-      question: "Quanto é 2 + 2?",
-      options: ["3", "4", "5", "6"],
-      answer: "4",
-    },
-    {
-      question: "Qual é a capital da França?",
-      options: ["Londres", "Berlim", "Paris", "Madri"],
-      answer: "Paris",
-    },
-    {
-      question: "Qual planeta é conhecido como o Planeta Vermelho?",
-      options: ["Terra", "Marte", "Júpiter", "Saturno"],
-      answer: "Marte",
-    },
-  ];
 
   io.on("connection", (socket) => {
     console.log(`A user connected: ${socket.id}`);
@@ -43,6 +22,7 @@ export const initializeWebSocket = (server: http.Server) => {
       games[roomId] = {
         hostId: socket.id,
         players: [],
+        playerPositionIndex: {},
         currentQuestionIndex: -1,
         questions: questions,
       };
@@ -63,7 +43,6 @@ export const initializeWebSocket = (server: http.Server) => {
       }
     });
 
-    // --- Player Events ---
     socket.on(
       "join-game",
       ({ roomId, playerName }: { roomId: string; playerName: string }) => {
@@ -72,9 +51,7 @@ export const initializeWebSocket = (server: http.Server) => {
           const newPlayer = { id: socket.id, name: playerName, score: 0 };
           games[roomId].players.push(newPlayer);
 
-          // Notify everyone in the room (including the host) about the new player
           io.to(roomId).emit("player-joined", games[roomId].players);
-          // Confirm to the player that they've joined successfully
           socket.emit("join-success");
           console.log(`Player ${playerName} joined room ${roomId}`);
         } else {
@@ -85,7 +62,7 @@ export const initializeWebSocket = (server: http.Server) => {
 
     socket.on(
       "submit-answer",
-      ({ roomId, answer }: { roomId: string; answer: string }) => {
+      ({ roomId, answer }: { roomId: string; answer: number }) => {
         const game = games[roomId];
         if (!game) return;
 
@@ -97,14 +74,11 @@ export const initializeWebSocket = (server: http.Server) => {
           if (isCorrect) {
             player.score += 10;
           }
-          // Notify the player of their result
           socket.emit("answer-result", { isCorrect, score: player.score });
-          // Notify the host about the answer
           io.to(game.hostId).emit("player-answered", {
             playerName: player.name,
             isCorrect,
           });
-          // Update the game state for everyone
           io.to(roomId).emit("game-state-update", game);
         }
       }
