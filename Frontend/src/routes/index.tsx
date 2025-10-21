@@ -1,5 +1,9 @@
+import { EndScreen } from '@/components/screens/EndScreen'
+import { HomeScreen } from '@/components/screens/HomeScreen'
+import { HostScreen } from '@/components/screens/HostScreen'
+import { LobbyScreen } from '@/components/screens/LobbyScreen'
+import { PlayerScreen } from '@/components/screens/PlayerScreen'
 import { useGameLogic } from '@/contexts/useGameLogic'
-import type { Question } from '@/types/Types'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
@@ -28,11 +32,11 @@ function App() {
     window.location.reload()
   }
 
-  const renderView = () => {
+  function renderView() {
     switch (view) {
       case 'host':
         return (
-          <HostView
+          <HostScreen
             roomId={roomId}
             players={players}
             onStartGame={handleStartGame}
@@ -42,7 +46,7 @@ function App() {
         )
       case 'player-question':
         return (
-          <PlayerQuestionView
+          <PlayerScreen
             question={question}
             onAnswerSubmit={handleAnswerSubmit}
             playerInfo={playerInfo}
@@ -50,17 +54,26 @@ function App() {
         )
       case 'lobby':
         return (
-          <LobbyView
+          <LobbyScreen
             roomId={roomId}
             playerInfo={playerInfo}
             lastAnswerResult={lastAnswerResult}
           />
         )
       case 'game-over':
-        return <GameOverView results={gameResult} onGoHome={handleGoHome} />
+        return <EndScreen results={gameResult} onGoHome={handleGoHome} />
+      case 'home':
+        return (
+          <HomeScreen
+            onCreateGame={handleCreateGame}
+            onJoinGame={handleJoinGame}
+            nameRef={nameInputRef}
+            roomRef={roomInputRef}
+          />
+        )
       default:
         return (
-          <HomeView
+          <HomeScreen
             onCreateGame={handleCreateGame}
             onJoinGame={handleJoinGame}
             nameRef={nameInputRef}
@@ -76,231 +89,3 @@ function App() {
     </div>
   )
 }
-
-const HomeView = ({
-  onCreateGame,
-  onJoinGame,
-  nameRef,
-  roomRef,
-}: {
-  onCreateGame: () => void
-  onJoinGame: () => void
-  nameRef: React.RefObject<HTMLInputElement | null>
-  roomRef: React.RefObject<HTMLInputElement | null>
-}) => (
-  <div className="text-center space-y-8">
-    <h1 className="text-6xl font-extrabold text-purple-400">Porandu MVP</h1>
-    <div className="space-y-4 p-8 bg-gray-800 rounded-lg shadow-xl">
-      <h2 className="text-3xl font-bold">Entrar em uma Sala</h2>
-      <input
-        ref={nameRef}
-        type="text"
-        placeholder="Seu Nome"
-        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
-      />
-      <input
-        ref={roomRef}
-        type="text"
-        placeholder="ID da Sala"
-        className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
-      />
-      <button
-        onClick={onJoinGame}
-        className="w-full py-3 bg-green-600 hover:bg-green-700 rounded-md text-xl font-bold transition-transform transform hover:scale-105"
-      >
-        Entrar
-      </button>
-    </div>
-    <div className="space-y-4">
-      <h2 className="text-3xl font-bold">Ou</h2>
-      <button
-        onClick={onCreateGame}
-        className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-xl font-bold transition-transform transform hover:scale-105"
-      >
-        Criar Nova Sala
-      </button>
-    </div>
-  </div>
-)
-
-const HostView = ({
-  roomId,
-  players,
-  onStartGame,
-  question,
-  onNextQuestion,
-}: {
-  roomId: string
-  players: { id: string; name: string; score: number }[]
-  onStartGame: () => void
-  question: Question
-  onNextQuestion: () => void
-}) => (
-  <div className="text-center space-y-6">
-    <h1 className="text-5xl font-bold">Painel do Anfitrião</h1>
-    <p className="text-2xl">
-      ID da Sala:{' '}
-      <span className="font-mono bg-gray-700 text-yellow-300 px-4 py-2 rounded-lg">
-        {roomId}
-      </span>
-    </p>
-
-    <div className="p-6 bg-gray-800 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-semibold mb-4">
-        {players.length > 0 ? 'Jogadores na Sala' : 'Aguardando jogadores...'}
-      </h2>
-      <ul className="space-y-2">
-        {players.map((p) => (
-          <li
-            key={p.id}
-            className="text-xl bg-gray-700 p-3 rounded-md flex justify-between"
-          >
-            <span>{p.name}</span> <span>{p.score}pts</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-
-    {!question && players.length > 0 && (
-      <button
-        onClick={onStartGame}
-        className="w-full py-4 text-2xl font-bold bg-blue-600 hover:bg-blue-700 rounded-md transition-transform transform hover:scale-105"
-      >
-        Start Game
-      </button>
-    )}
-
-    {question && (
-      <div className="mt-8 p-6 bg-gray-800 rounded-lg">
-        <h2 className="text-4xl font-bold mb-4">{question.question}</h2>
-        <div className="grid grid-cols-2 gap-4">
-          {question.options.map((opt) => (
-            <div key={opt} className="bg-gray-700 p-4 rounded-md text-2xl">
-              {opt}
-            </div>
-          ))}
-        </div>
-        <button
-          onClick={onNextQuestion}
-          className="mt-6 w-full py-3 text-xl font-bold bg-green-600 hover:bg-green-700 rounded-md transition-transform transform hover:scale-105"
-        >
-          Próxima Pergunta
-        </button>
-      </div>
-    )}
-  </div>
-)
-
-const PlayerQuestionView = ({
-  question,
-  onAnswerSubmit,
-  playerInfo,
-}: {
-  question: Question
-  onAnswerSubmit: (answer: number) => void
-  playerInfo: { name: string; score: number }
-}) => {
-  if (!question)
-    return <div className="text-3xl">Aguardando a próxima pergunta...</div>
-
-  const colors = ['bg-red-600', 'bg-blue-600', 'bg-yellow-600', 'bg-green-600']
-  const hoverColors = [
-    'hover:bg-red-700',
-    'hover:bg-blue-700',
-    'hover:bg-yellow-700',
-    'hover:bg-green-700',
-  ]
-
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center text-xl p-4 bg-gray-800 rounded-lg">
-        <span>{playerInfo.name}</span>
-        <span className="font-bold">{playerInfo.score} pts</span>
-      </div>
-      <div className="p-6 bg-gray-800 rounded-lg text-center">
-        <h2 className="text-4xl font-bold mb-6">{question.question}</h2>
-        <p className="text-lg mb-6">
-          Pergunta {question.questionNumber} de {question.totalQuestions}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {question.options.map((option, index) => (
-            <button
-              key={index}
-              onClick={() => onAnswerSubmit(index)}
-              className={`p-6 text-2xl font-bold rounded-lg transition-transform transform hover:scale-105 ${colors[index]} ${hoverColors[index]}`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-const LobbyView = ({
-  roomId,
-  playerInfo,
-  lastAnswerResult,
-}: {
-  roomId: string
-  playerInfo: { name: string; score: number }
-  lastAnswerResult: boolean | null
-}) => (
-  <div className="text-center space-y-6 flex flex-col items-center justify-center h-full">
-    {lastAnswerResult !== null &&
-      (lastAnswerResult ? (
-        <div className="text-5xl font-extrabold text-green-400 p-8 rounded-lg bg-green-900 bg-opacity-50">
-          Correto!
-        </div>
-      ) : (
-        <div className="text-5xl font-extrabold text-red-400 p-8 rounded-lg bg-red-900 bg-opacity-50">
-          Incorreto!
-        </div>
-      ))}
-    <h1 className="text-4xl font-bold">Bem-vindo(a), {playerInfo.name}!</h1>
-    <p className="text-2xl">
-      Você está na sala{' '}
-      <span className="font-mono text-yellow-300">{roomId}</span>
-    </p>
-    <p className="text-3xl mt-8 animate-pulse">
-      Aguardando o anfitrião iniciar a próxima rodada...
-    </p>
-    <p className="text-2xl font-bold mt-4">Sua pontuação: {playerInfo.score}</p>
-  </div>
-)
-
-const GameOverView = ({
-  results,
-  onGoHome,
-}: {
-  results: { id: string; name: string; score: number }[]
-  onGoHome: () => void
-}) => (
-  <div className="text-center space-y-6">
-    <h1 className="text-6xl font-extrabold text-yellow-400">Fim de Jogo!</h1>
-    <div className="p-8 bg-gray-800 rounded-lg shadow-xl">
-      <h2 className="text-4xl font-bold mb-6">Pontuações Finais</h2>
-      <ul className="space-y-3">
-        {results &&
-          results.map((player, index) => (
-            <li
-              key={player.id}
-              className={`text-2xl p-4 rounded-md flex justify-between items-center ${index === 0 ? 'bg-yellow-600' : 'bg-gray-700'}`}
-            >
-              <span>
-                {index + 1}. {player.name}
-              </span>
-              <span className="font-bold">{player.score} pts</span>
-            </li>
-          ))}
-      </ul>
-    </div>
-    <button
-      onClick={onGoHome}
-      className="w-full py-3 mt-6 bg-blue-600 hover:bg-blue-700 rounded-md text-xl font-bold transition-transform transform hover:scale-105"
-    >
-      Jogar Novamente
-    </button>
-  </div>
-)
