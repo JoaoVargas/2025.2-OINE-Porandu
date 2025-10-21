@@ -1,7 +1,7 @@
 import http from "http";
 import { Server } from "socket.io";
 import { questions } from "../utils/Questions";
-import { Game } from "../types/General";
+import { Game } from "../types/Types";
 
 export const initializeWebSocket = (server: http.Server) => {
   const io = new Server(server, {

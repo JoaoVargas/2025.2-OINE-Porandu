@@ -1,99 +1,28 @@
+import { useGameLogic } from '@/contexts/useGameLogic'
+import type { Question } from '@/types/Types'
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useRef, useState } from 'react'
-import { io } from 'socket.io-client'
-import type { Socket } from 'socket.io-client'
 
 export const Route = createFileRoute('/')({
   component: App,
 })
 
 function App() {
-  const [socket, setSocket] = useState<Socket>()
-  const [view, setView] = useState<string>('home')
-  const [roomId, setRoomId] = useState<string>('')
-  const [players, setPlayers] = useState([])
-  const [question, setQuestion] = useState(null)
-  const [gameResult, setGameResult] = useState(null)
-  const [playerInfo, setPlayerInfo] = useState({ name: '', score: 0 })
-  const [lastAnswerResult, setLastAnswerResult] = useState(null)
-
-  const nameInputRef = useRef<string>('')
-  const roomInputRef = useRef<string>('')
-  useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
-      autoConnect: false,
-    })
-    setSocket(newSocket)
-
-    newSocket.on('connect', () =>
-      console.log('Socket conectado!', newSocket.id),
-    )
-    newSocket.on('game-created', (newRoomId) => {
-      setRoomId(newRoomId)
-      setView('host')
-    })
-    newSocket.on('player-joined', (updatedPlayers) => {
-      setPlayers(updatedPlayers)
-    })
-    newSocket.on('join-success', () => {
-      setView('lobby')
-    })
-    newSocket.on('new-question', (q) => {
-      setQuestion(q)
-      setLastAnswerResult(null)
-      setView((view) => (view === 'host' ? 'host' : 'player-question'))
-    })
-    newSocket.on('answer-result', ({ isCorrect, score }) => {
-      setLastAnswerResult(isCorrect)
-      setPlayerInfo((p) => ({ ...p, score }))
-    })
-    newSocket.on('game-state-update', (game) => {
-      setPlayers(game.players)
-    })
-    newSocket.on('game-over', (finalScores) => {
-      setGameResult(finalScores)
-      setView('game-over')
-    })
-    newSocket.on('error', (message) => {
-      alert(`Erro: ${message}`)
-    })
-
-    newSocket.connect()
-
-    return () => {
-      console.log('Desconectando o socket...')
-      newSocket.disconnect()
-    }
-  }, [])
-
-  function handleCreateGame() {
-    socket?.emit('create-game')
-  }
-
-  function handleJoinGame() {
-    const playerName = nameInputRef.current.value
-    const gameRoomId = roomInputRef.current.value
-
-    if (playerName && gameRoomId) {
-      setPlayerInfo({ name: playerName, score: 0 })
-      setRoomId(gameRoomId)
-      socket?.emit('join-game', { roomId: gameRoomId, playerName })
-    }
-  }
-
-  function handleStartGame() {
-    socket?.emit('start-game', roomId)
-  }
-
-  function handleNextQuestion() {
-    setQuestion(null)
-    socket?.emit('next-question', roomId)
-  }
-
-  function handleAnswerSubmit(answer: number) {
-    socket?.emit('submit-answer', { roomId, answer })
-    setView('lobby')
-  }
+  const {
+    view,
+    roomId,
+    players,
+    question,
+    gameResult,
+    playerInfo,
+    lastAnswerResult,
+    nameInputRef,
+    roomInputRef,
+    handleCreateGame,
+    handleJoinGame,
+    handleStartGame,
+    handleNextQuestion,
+    handleAnswerSubmit,
+  } = useGameLogic()
 
   function handleGoHome() {
     window.location.reload()
@@ -148,7 +77,17 @@ function App() {
   )
 }
 
-const HomeView = ({ onCreateGame, onJoinGame, nameRef, roomRef }) => (
+const HomeView = ({
+  onCreateGame,
+  onJoinGame,
+  nameRef,
+  roomRef,
+}: {
+  onCreateGame: () => void
+  onJoinGame: () => void
+  nameRef: React.RefObject<HTMLInputElement | null>
+  roomRef: React.RefObject<HTMLInputElement | null>
+}) => (
   <div className="text-center space-y-8">
     <h1 className="text-6xl font-extrabold text-purple-400">Porandu MVP</h1>
     <div className="space-y-4 p-8 bg-gray-800 rounded-lg shadow-xl">
@@ -190,6 +129,12 @@ const HostView = ({
   onStartGame,
   question,
   onNextQuestion,
+}: {
+  roomId: string
+  players: { id: string; name: string; score: number }[]
+  onStartGame: () => void
+  question: Question
+  onNextQuestion: () => void
 }) => (
   <div className="text-center space-y-6">
     <h1 className="text-5xl font-bold">Painel do Anfitrião</h1>
@@ -246,7 +191,15 @@ const HostView = ({
   </div>
 )
 
-const PlayerQuestionView = ({ question, onAnswerSubmit, playerInfo }) => {
+const PlayerQuestionView = ({
+  question,
+  onAnswerSubmit,
+  playerInfo,
+}: {
+  question: Question
+  onAnswerSubmit: (answer: number) => void
+  playerInfo: { name: string; score: number }
+}) => {
   if (!question)
     return <div className="text-3xl">Aguardando a próxima pergunta...</div>
 
@@ -285,7 +238,15 @@ const PlayerQuestionView = ({ question, onAnswerSubmit, playerInfo }) => {
   )
 }
 
-const LobbyView = ({ roomId, playerInfo, lastAnswerResult }) => (
+const LobbyView = ({
+  roomId,
+  playerInfo,
+  lastAnswerResult,
+}: {
+  roomId: string
+  playerInfo: { name: string; score: number }
+  lastAnswerResult: boolean | null
+}) => (
   <div className="text-center space-y-6 flex flex-col items-center justify-center h-full">
     {lastAnswerResult !== null &&
       (lastAnswerResult ? (
@@ -309,7 +270,13 @@ const LobbyView = ({ roomId, playerInfo, lastAnswerResult }) => (
   </div>
 )
 
-const GameOverView = ({ results, onGoHome }) => (
+const GameOverView = ({
+  results,
+  onGoHome,
+}: {
+  results: { id: string; name: string; score: number }[]
+  onGoHome: () => void
+}) => (
   <div className="text-center space-y-6">
     <h1 className="text-6xl font-extrabold text-yellow-400">Fim de Jogo!</h1>
     <div className="p-8 bg-gray-800 rounded-lg shadow-xl">

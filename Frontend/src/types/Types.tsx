@@ -1,4 +1,4 @@
-import { Socket } from "socket.io";
+import type { Socket } from 'socket.io-client'
 
 export interface Player {
   id: string;
@@ -9,7 +9,8 @@ export interface Player {
 export interface Question {
   question: string;
   options: string[];
-  answer: number;
+  questionNumber: number;
+  totalQuestions: number;
 }
 
 export interface Game {
