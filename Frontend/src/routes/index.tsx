@@ -85,7 +85,9 @@ function App() {
 
   return (
     <div className="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center font-sans p-4">
-      <div className="w-full max-w-2xl mx-auto">{renderView()}</div>
+      <div className="w-full mx-auto max-w-2xl md:max-w-5xl">
+        {renderView()}
+      </div>
     </div>
   )
 }
