@@ -3,26 +3,35 @@ import { Socket } from "socket.io";
 export interface Player {
   id: string;
   name: string;
-  score: number;
+  position: number;
+  correct_answers: number;
 }
 
 export interface Question {
+  id: number;
   question: string;
   options: string[];
   answer: number;
 }
 
 export interface QuestionSend {
-  question: string;
-  options: string[];
-  questionNumber: number;
-  totalQuestions: number;
+  question: Question["question"];
+  options: Question["options"];
 }
 
 export interface Game {
   hostId: Socket["id"];
-  currentQuestionIndex: number;
-  playerPositionIndex: { [key: Player["id"]]: number };
   players: Player[];
   questions: Question[];
+  currentRound: number;
+  currentPlayer: Player | null;
+  currentQuestion: Question | null;
+  totalPositions: number;
+}
+
+export interface GameStateSend {
+  players: Player[];
+  currentQuestion: QuestionSend | null;
+  currentPlayer: Player | null;
+  currentRound: number;
 }

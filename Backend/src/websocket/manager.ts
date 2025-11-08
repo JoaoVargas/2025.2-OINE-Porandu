@@ -1,7 +1,7 @@
 import http from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { questions } from "../utils/Questions";
-import { Game } from "../types/Types";
+import { Game, GameStateSend, Player, QuestionSend } from "../types/Types";
 
 export const initializeWebSocket = (server: http.Server) => {
   const io = new Server(server, {
@@ -18,41 +18,53 @@ export const initializeWebSocket = (server: http.Server) => {
 
     socket.on("create-game", () => {
       const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+
       socket.join(roomId);
+
       games[roomId] = {
         hostId: socket.id,
         players: [],
-        playerPositionIndex: {},
-        currentQuestionIndex: -1,
         questions: questions,
+        currentRound: 0,
+        currentPlayer: null,
+        currentQuestion: null,
+        totalPositions: 10,
       };
+
       socket.emit("game-created", roomId);
+
       console.log(`Game created with ID: ${roomId} by host ${socket.id}`);
-    });
-
-    socket.on("start-game", (roomId: string) => {
-      if (games[roomId] && games[roomId].hostId === socket.id) {
-        console.log(`Starting game ${roomId}`);
-        askQuestion(roomId);
-      }
-    });
-
-    socket.on("next-question", (roomId: string) => {
-      if (games[roomId] && games[roomId].hostId === socket.id) {
-        askQuestion(roomId);
-      }
     });
 
     socket.on(
       "join-game",
       ({ roomId, playerName }: { roomId: string; playerName: string }) => {
         if (games[roomId]) {
+          if (games[roomId].currentRound > 0) {
+            socket.emit("error", "Game has already started");
+            return;
+          }
+
           socket.join(roomId);
-          const newPlayer = { id: socket.id, name: playerName, score: 0 };
+
+          const newPlayer: Player = {
+            id: socket.id,
+            name: playerName,
+            position: 0,
+            correct_answers: 0,
+          };
+
           games[roomId].players.push(newPlayer);
 
-          io.to(roomId).emit("player-joined", games[roomId].players);
+          io.to(roomId).emit("player-joined", {
+            players: games[roomId].players,
+            currentQuestion: null,
+            currentPlayer: null,
+            currentRound: games[roomId].currentRound,
+          } as GameStateSend);
+
           socket.emit("join-success");
+
           console.log(`Player ${playerName} joined room ${roomId}`);
         } else {
           socket.emit("error", "Game not found");
@@ -60,26 +72,24 @@ export const initializeWebSocket = (server: http.Server) => {
       }
     );
 
+    socket.on("start-game", (roomId: string) => {
+      if (games[roomId] && games[roomId].hostId === socket.id) {
+        console.log(`Starting game ${roomId}`);
+        handleNextRound(roomId);
+      }
+    });
+
+    socket.on("next-round", (roomId: string) => {
+      if (games[roomId] && games[roomId].hostId === socket.id) {
+        handleNextRound(roomId);
+      }
+    });
+
     socket.on(
       "submit-answer",
       ({ roomId, answer }: { roomId: string; answer: number }) => {
-        const game = games[roomId];
-        if (!game) return;
-
-        const player = game.players.find((p) => p.id === socket.id);
-        const question = game.questions[game.currentQuestionIndex];
-
-        if (player && question) {
-          const isCorrect = question.answer === answer;
-          if (isCorrect) {
-            player.score += 10;
-          }
-          socket.emit("answer-result", { isCorrect, score: player.score });
-          io.to(game.hostId).emit("player-answered", {
-            playerName: player.name,
-            isCorrect,
-          });
-          io.to(roomId).emit("game-state-update", game);
+        if (games[roomId] && games[roomId].currentPlayer?.id === socket.id) {
+          handleSubmitAnswer(roomId, answer, socket);
         }
       }
     );
@@ -89,30 +99,123 @@ export const initializeWebSocket = (server: http.Server) => {
     });
   });
 
-  function askQuestion(roomId: string) {
-    const game = games[roomId];
-    if (!game) return;
+  function handleNextRound(roomId: string) {
+    if (!games[roomId]) return;
 
-    game.currentQuestionIndex++;
-    if (game.currentQuestionIndex >= game.questions.length) {
-      io.to(roomId).emit(
-        "game-over",
-        game.players.sort((a, b) => b.score - a.score)
-      );
-      console.log(`Game ${roomId} is over.`);
-      delete games[roomId];
-      return;
+    games[roomId].currentRound += 1;
+    const roundPlayerPosition = fetchRoundPlayerPosition(roomId);
+    if (roundPlayerPosition) {
+      games[roomId].currentPlayer = games[roomId].players[roundPlayerPosition];
+    } else {
+      games[roomId].currentPlayer = null;
+    }
+    const roundQuestionrPosition = fetchRoundQuestionPosition(roomId);
+    if (roundQuestionrPosition) {
+      games[roomId].currentQuestion =
+        games[roomId].questions[roundQuestionrPosition];
+    } else {
+      games[roomId].currentPlayer = null;
     }
 
-    const question = game.questions[game.currentQuestionIndex];
-    io.to(roomId).emit("new-question", {
-      question: question.question,
-      options: question.options,
-      questionNumber: game.currentQuestionIndex + 1,
-      totalQuestions: game.questions.length,
+    const gameState: GameStateSend = {
+      players: games[roomId].players,
+      currentQuestion: {
+        question: games[roomId].currentQuestion?.question,
+        options: games[roomId].currentQuestion?.options,
+      } as QuestionSend,
+      currentPlayer: games[roomId].currentPlayer,
+      currentRound: games[roomId].currentRound,
+    };
+
+    io.to(roomId).emit("round-updated", gameState);
+
+    console.log(`Next round in room ${roomId}`, gameState);
+  }
+
+  function fetchRoundPlayerPosition(roomId: string) {
+    const game = games[roomId];
+    if (!game) return null;
+
+    const gameRound = game.currentRound;
+    const playersCount = game.players.length;
+    const playerPosition = gameRound % playersCount;
+
+    return playerPosition;
+  }
+
+  function fetchRoundQuestionPosition(roomId: string) {
+    const game = games[roomId];
+    if (!game) return null;
+
+    const gameRound = game.currentRound;
+    const questionsCount = game.questions.length;
+    const questionPosition = gameRound % questionsCount;
+
+    return questionPosition;
+  }
+
+  function handleSubmitAnswer(roomId: string, answer: number, socket: Socket) {
+    const isCorrect = games[roomId].currentQuestion?.answer === answer;
+
+    if (isCorrect) {
+      handleCorrectAnswer(roomId, socket);
+    } else {
+      handleWrongAnswer(roomId, socket);
+    }
+
+    const gameState: GameStateSend = {
+      players: games[roomId].players,
+      currentQuestion: {
+        question: games[roomId].currentQuestion?.question,
+        options: games[roomId].currentQuestion?.options,
+      } as QuestionSend,
+      currentPlayer: games[roomId].currentPlayer,
+      currentRound: games[roomId].currentRound,
+    };
+
+    io.to(roomId).emit("round-updated", gameState);
+  }
+
+  function handleCorrectAnswer(roomId: string, socket: Socket) {
+    if (!games[roomId] || !games[roomId].currentPlayer) return;
+
+    const postionsToAdvance = rollD6();
+
+    games[roomId].currentPlayer.position += postionsToAdvance;
+    games[roomId].currentPlayer.correct_answers += 1;
+
+    //
+    // END GAME LOGIC
+    //
+
+    socket.emit("answer-result", { result: true, advance: postionsToAdvance });
+
+    io.to(games[roomId].hostId).emit("player-answered", {
+      result: true,
+      advance: postionsToAdvance,
     });
-    console.log(
-      `Asking question ${game.currentQuestionIndex + 1} in room ${roomId}`
-    );
+  }
+
+  function rollD6() {
+    return Math.floor(Math.random() * 6) + 1;
+  }
+
+  function handleWrongAnswer(roomId: string, socket: Socket) {
+    if (!games[roomId] || !games[roomId].currentPlayer) return;
+
+    const postionsToAdvance = 1;
+
+    games[roomId].currentPlayer.position += postionsToAdvance;
+
+    //
+    // END GAME LOGIC
+    //
+
+    socket.emit("answer-result", { result: false, advance: postionsToAdvance });
+
+    io.to(games[roomId].hostId).emit("player-answered", {
+      result: false,
+      advance: postionsToAdvance,
+    });
   }
 };
