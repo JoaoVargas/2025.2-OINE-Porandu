@@ -28,7 +28,7 @@ export const initializeWebSocket = (server: http.Server) => {
         currentRound: 0,
         currentPlayer: null,
         currentQuestion: null,
-        totalPositions: 10,
+        totalPositions: 3,
       };
 
       socket.emit("game-created", roomId);
@@ -196,16 +196,17 @@ export const initializeWebSocket = (server: http.Server) => {
     games[roomId].currentPlayer.position += postionsToAdvance;
     games[roomId].currentPlayer.correct_answers += 1;
 
-    //
-    // END GAME LOGIC
-    //
-
     socket.emit("answer-result", { result: true, advance: postionsToAdvance });
 
     io.to(games[roomId].hostId).emit("player-answered", {
       result: true,
       advance: postionsToAdvance,
     });
+
+    if (games[roomId].currentPlayer.position >= games[roomId].totalPositions) {
+      handleEndGame(roomId);
+      return;
+    }
   }
 
   function rollD6() {
@@ -219,15 +220,31 @@ export const initializeWebSocket = (server: http.Server) => {
 
     games[roomId].currentPlayer.position += postionsToAdvance;
 
-    //
-    // END GAME LOGIC
-    //
-
     socket.emit("answer-result", { result: false, advance: postionsToAdvance });
 
     io.to(games[roomId].hostId).emit("player-answered", {
       result: false,
       advance: postionsToAdvance,
     });
+
+    if (games[roomId].currentPlayer.position >= games[roomId].totalPositions) {
+      handleEndGame(roomId);
+      return;
+    }
+  }
+
+  function handleEndGame(roomId: string) {
+    const gameState: GameStateSend = {
+      players: games[roomId].players,
+      currentQuestion: {
+        question: games[roomId].currentQuestion?.question,
+        options: games[roomId].currentQuestion?.options,
+      } as QuestionSend,
+      currentPlayer: games[roomId].currentPlayer,
+      currentRound: games[roomId].currentRound,
+      hasPlayerAnswered: false,
+    };
+
+    io.to(roomId).emit("game-over", gameState);
   }
 };
