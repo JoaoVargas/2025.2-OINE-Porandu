@@ -34,4 +34,5 @@ export interface GameStateSend {
   currentQuestion: QuestionSend | null;
   currentPlayer: Player | null;
   currentRound: number;
+  hasPlayerAnswered: boolean;
 }

@@ -1,93 +1,34 @@
-import { EndScreen } from '@/components/screens/EndScreen'
-import { HomeScreen } from '@/components/screens/HomeScreen'
-import { HostScreen } from '@/components/screens/HostScreen'
-import { LobbyScreen } from '@/components/screens/LobbyScreen'
-import { PlayerScreen } from '@/components/screens/PlayerScreen'
+import ResultScreen from '@/components/screens/ResultScreen'
+import HomeScreen from '@/components/screens/HomeScreen'
+import HostScreen from '@/components/screens/HostScreen'
+import PreGameScreen from '@/components/screens/PreGameScreen'
+import PlayerScreen from '@/components/screens/PlayerScreen'
 import { useGameLogic } from '@/contexts/useGameLogic'
-import { createFileRoute } from '@tanstack/react-router'
+import { useMemo } from 'react'
 
-export const Route = createFileRoute('/')({
-  component: App,
-})
+export default function App() {
+  const { view } = useGameLogic()
 
-function App() {
-  const {
-    view,
-    roomId,
-    players,
-    question,
-    gameResult,
-    playerInfo,
-    lastAnswerResult,
-    nameInputRef,
-    roomInputRef,
-    handleCreateGame,
-    handleJoinGame,
-    handleStartGame,
-    handleNextQuestion,
-    handleAnswerSubmit,
-  } = useGameLogic()
-
-  function handleGoHome() {
-    window.location.reload()
-  }
-
-  function renderView() {
+  const renderView = useMemo(() => {
     switch (view) {
-      case 'host':
-        return (
-          <HostScreen
-            roomId={roomId}
-            players={players}
-            onStartGame={handleStartGame}
-            question={question}
-            onNextQuestion={handleNextQuestion}
-          />
-        )
-      case 'player-question':
-        return (
-          <PlayerScreen
-            question={question}
-            onAnswerSubmit={handleAnswerSubmit}
-            playerInfo={playerInfo}
-          />
-        )
-      case 'lobby':
-        return (
-          <LobbyScreen
-            roomId={roomId}
-            playerInfo={playerInfo}
-            lastAnswerResult={lastAnswerResult}
-          />
-        )
-      case 'game-over':
-        return <EndScreen results={gameResult} onGoHome={handleGoHome} />
       case 'home':
-        return (
-          <HomeScreen
-            onCreateGame={handleCreateGame}
-            onJoinGame={handleJoinGame}
-            nameRef={nameInputRef}
-            roomRef={roomInputRef}
-          />
-        )
+        return <HomeScreen />
+      case 'pre-game':
+        return <PreGameScreen />
+      case 'host':
+        return <HostScreen />
+      case 'player':
+        return <PlayerScreen />
+      case 'result':
+        return <ResultScreen />
       default:
-        return (
-          <HomeScreen
-            onCreateGame={handleCreateGame}
-            onJoinGame={handleJoinGame}
-            nameRef={nameInputRef}
-            roomRef={roomInputRef}
-          />
-        )
+        return <HomeScreen />
     }
-  }
+  }, [view])
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center font-sans p-4">
-      <div className="w-full mx-auto max-w-2xl md:max-w-5xl">
-        {renderView()}
-      </div>
+    <div className="bg-gray-900 text-white h-screen w-screen font-sans">
+      {renderView}
     </div>
   )
 }

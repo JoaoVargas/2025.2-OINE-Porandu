@@ -1,47 +1,92 @@
-import type { Question } from "@/types/Types";
+import { useGameLogic } from '@/contexts/useGameLogic'
 
-export const PlayerScreen = ({
-  question,
-  onAnswerSubmit,
-  playerInfo,
-}: {
-  question: Question
-  onAnswerSubmit: (answer: number) => void
-  playerInfo: { name: string; score: number }
-}) => {
-  if (!question)
-    return <div className="text-3xl">Aguardando a próxima pergunta...</div>
+export default function PlayerScreen() {
+  const {
+    isCurrentPlayerRoundRef,
+    currentQuestionRef,
+    handleSubmitAnswer,
+    isWaitingAnwser,
+  } = useGameLogic()
 
-  const colors = ['bg-red-600', 'bg-blue-600', 'bg-yellow-600', 'bg-green-600']
-  const hoverColors = [
-    'hover:bg-red-700',
-    'hover:bg-blue-700',
-    'hover:bg-yellow-700',
-    'hover:bg-green-700',
-  ]
+  if (!isCurrentPlayerRoundRef.current) {
+    return (
+      <div className="w-full h-full p-8 flex justify-center items-center">
+        <div className="p-8 bg-gray-800 rounded-lg shadow-xl gap-6 flex flex-col items-center">
+          <span className="text-xl font-bold">Aguarde...</span>
+          <span>Outro jogador está respondendo agora</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center text-xl p-4 bg-gray-800 rounded-lg">
-        <span>{playerInfo.name}</span>
-        <span className="font-bold">{playerInfo.score} pts</span>
-      </div>
-      <div className="p-6 bg-gray-800 rounded-lg text-center">
-        <h2 className="text-4xl font-bold mb-6">{question.question}</h2>
-        <p className="text-lg mb-6">
-          Pergunta {question.questionNumber} de {question.totalQuestions}
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {question.options.map((option, index) => (
-            <button
-              key={index}
-              onClick={() => onAnswerSubmit(index)}
-              className={`p-6 text-2xl font-bold rounded-lg transition-transform transform hover:scale-105 ${colors[index]} ${hoverColors[index]}`}
-            >
-              {option}
-            </button>
-          ))}
+    <div className="grid grid-cols-11 grid-rows-11 gap-8 h-full p-8">
+      <div className="col-span-11 row-span-3">
+        <div className="h-full w-full bg-gray-800 rounded-lg p-4 flex items-center justify-center">
+          <span className="text-center">
+            {currentQuestionRef.current?.question}
+          </span>
         </div>
+      </div>
+      <div className="col-span-11 row-span-2">
+        <button
+          disabled={!isWaitingAnwser}
+          onClick={() => handleSubmitAnswer(0)}
+          className={`
+            w-full h-full py-3 rounded-md text-xl font-bold 
+            ${
+              isWaitingAnwser
+                ? 'cursor-pointer bg-red-600 hover:bg-red-700 transition-transform transform hover:scale-105 active:scale-105'
+                : 'bg-red-600/40 text-white/60'
+            }`}
+        >
+          {currentQuestionRef.current?.options[0]}
+        </button>
+      </div>
+      <div className="col-span-11 row-span-2">
+        <button
+          disabled={!isWaitingAnwser}
+          onClick={() => handleSubmitAnswer(1)}
+          className={`
+            w-full h-full py-3 rounded-md text-xl font-bold 
+            ${
+              isWaitingAnwser
+                ? 'cursor-pointer bg-green-600 hover:bg-green-700 transition-transform transform hover:scale-105 active:scale-105'
+                : 'bg-green-600/40 text-white/60'
+            }`}
+        >
+          {currentQuestionRef.current?.options[1]}
+        </button>
+      </div>
+      <div className="col-span-11 row-span-2">
+        <button
+          disabled={!isWaitingAnwser}
+          onClick={() => handleSubmitAnswer(2)}
+          className={`
+            w-full h-full py-3 rounded-md text-xl font-bold 
+            ${
+              isWaitingAnwser
+                ? 'cursor-pointer bg-yellow-600 hover:bg-yellow-700 transition-transform transform hover:scale-105 active:scale-105'
+                : 'bg-yellow-600/40 text-white/60'
+            }`}
+        >
+          {currentQuestionRef.current?.options[2]}
+        </button>
+      </div>
+      <div className="col-span-11 row-span-2">
+        <button
+          disabled={!isWaitingAnwser}
+          onClick={() => handleSubmitAnswer(3)}
+          className={`
+            w-full h-full py-3 rounded-md text-xl font-bold 
+            ${
+              isWaitingAnwser
+                ? 'cursor-pointer bg-purple-600 hover:bg-purple-700 transition-transform transform hover:scale-105 active:scale-105'
+                : 'bg-purple-600/40 text-white/60'
+            }`}
+        >
+          {currentQuestionRef.current?.options[3]}
+        </button>
       </div>
     </div>
   )

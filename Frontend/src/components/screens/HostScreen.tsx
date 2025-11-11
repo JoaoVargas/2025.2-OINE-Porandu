@@ -1,69 +1,111 @@
-import type { Question } from "@/types/Types";
+import { useGameLogic } from '@/contexts/useGameLogic'
 
-export const HostScreen = ({
-  roomId,
-  players,
-  onStartGame,
-  question,
-  onNextQuestion,
-}: {
-  roomId: string
-  players: { id: string; name: string; score: number }[]
-  onStartGame: () => void
-  question: Question
-  onNextQuestion: () => void
-}) => (
-  <div className="text-center space-y-6">
-    <h1 className="text-5xl font-bold">Painel do Anfitrião</h1>
-    <p className="text-2xl">
-      ID da Sala:{' '}
-      <span className="font-mono bg-gray-700 text-yellow-300 px-4 py-2 rounded-lg">
-        {roomId}
-      </span>
-    </p>
+export default function HostScreen() {
+  const { currentQuestionRef, currentPlayerRef, players, handleNextRound } =
+    useGameLogic()
 
-    <div className="p-6 bg-gray-800 rounded-lg shadow-lg">
-      <h2 className="text-3xl font-semibold mb-4">
-        {players.length > 0 ? 'Jogadores na Sala' : 'Aguardando jogadores...'}
-      </h2>
-      <ul className="space-y-2">
-        {players.map((p) => (
-          <li
-            key={p.id}
-            className="text-xl bg-gray-700 p-3 rounded-md flex justify-between"
-          >
-            <span>{p.name}</span> <span>{p.score}pts</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-
-    {!question && players.length > 0 && (
-      <button
-        onClick={onStartGame}
-        className="w-full py-4 text-2xl font-bold bg-blue-600 hover:bg-blue-700 rounded-md transition-transform transform hover:scale-105"
-      >
-        Start Game
-      </button>
-    )}
-
-    {question && (
-      <div className="mt-8 p-6 bg-gray-800 rounded-lg">
-        <h2 className="text-4xl font-bold mb-4">{question.question}</h2>
-        <div className="grid grid-cols-2 gap-4">
-          {question.options.map((opt) => (
-            <div key={opt} className="bg-gray-700 p-4 rounded-md text-2xl">
-              {opt}
-            </div>
-          ))}
-        </div>
+  return (
+    <div className="grid grid-cols-11 grid-rows-11 gap-8 h-full p-8">
+      <div className="col-span-8 row-span-8">
+        <div className="h-full w-full bg-gray-800 rounded-lg p-4">main</div>
+      </div>
+      <div className="col-span-3 row-span-1">
         <button
-          onClick={onNextQuestion}
-          className="mt-6 w-full py-3 text-xl font-bold bg-green-600 hover:bg-green-700 rounded-md transition-transform transform hover:scale-105"
+          onClick={handleNextRound}
+          className="cursor-pointer w-full h-full py-3 bg-green-600 hover:bg-green-700 rounded-md text-xl font-bold transition-transform transform hover:scale-105"
         >
-          Próxima Pergunta
+          Próximo turno
         </button>
       </div>
-    )}
-  </div>
-)
+      <div className="col-span-3 row-span-2">
+        <div className="h-full w-full bg-gray-800 rounded-lg p-4 flex flex-col justify-center gap-4 text-center">
+          <span className="text-5xl font-bold truncate">
+            {currentPlayerRef.current?.name}
+          </span>
+          <span className="italic">Jogador atual</span>
+        </div>
+      </div>
+      <div className="col-span-3 row-span-4">
+        <div className="h-full w-full bg-gray-800 rounded-lg p-4 gap-4 flex flex-col">
+          <span className="text-lg font-bold text-center">Ranking posição</span>
+          <div className="flex flex-col gap-4 w-full overflow-scroll">
+            {players
+              .sort(
+                (player1, player2) =>
+                  (player1.position - player2.position) * -1,
+              )
+              .map((player) => (
+                <div
+                  key={player.id}
+                  className=" bg-gray-700 rounded-lg p-4 gap-4 flex flex-row justify-between"
+                >
+                  <span className="text-xl truncate ">{player.name}</span>
+                  <span className="text-xl font-bold">{player.position}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+      <div className="col-span-3 row-span-4">
+        <div className="h-full w-full bg-gray-800 rounded-lg p-4 gap-4 flex flex-col">
+          <span className="text-lg font-bold text-center">
+            Ranking perguntas acertadas
+          </span>
+          <div className="flex flex-col gap-4 w-full overflow-scroll justify-center">
+            {players
+              .sort(
+                (player1, player2) =>
+                  (player1.correct_answers - player2.correct_answers) * -1,
+              )
+              .map((player) => (
+                <div
+                  key={player.id}
+                  className=" bg-gray-700 rounded-lg p-4 gap-4 flex flex-row justify-between"
+                >
+                  <span className="text-xl truncate">{player.name}</span>
+                  <span className="text-xl font-bold">
+                    {player.correct_answers}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+      <div className="col-span-8 row-span-1">
+        <div className="h-full w-full bg-gray-800 rounded-lg p-4 items-center text-center">
+          <span className="truncate block">
+            {currentQuestionRef.current?.question}
+          </span>
+        </div>
+      </div>
+      <div className="col-span-2 row-span-2">
+        <div className="h-full w-full bg-red-900 rounded-lg p-4 flex justify-center items-center">
+          <span className="text-xl truncate block">
+            {currentQuestionRef.current?.options[0]}
+          </span>
+        </div>
+      </div>
+      <div className="col-span-2 row-span-2">
+        <div className="h-full w-full bg-green-900 rounded-lg p-4 flex justify-center items-center">
+          <span className="text-xl truncate block">
+            {currentQuestionRef.current?.options[1]}
+          </span>
+        </div>
+      </div>
+      <div className="col-span-2 row-span-2">
+        <div className="h-full w-full bg-yellow-900 rounded-lg p-4 flex justify-center items-center">
+          <span className="text-xl truncate block">
+            {currentQuestionRef.current?.options[2]}
+          </span>
+        </div>
+      </div>
+      <div className="col-span-2 row-span-2">
+        <div className="h-full w-full bg-purple-900 rounded-lg p-4 flex justify-center items-center">
+          <span className="text-xl truncate block">
+            {currentQuestionRef.current?.options[3]}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}

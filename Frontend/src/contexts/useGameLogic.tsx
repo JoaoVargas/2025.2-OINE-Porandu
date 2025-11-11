@@ -1,4 +1,4 @@
-import type { Player } from '@/types/Types'
+import type { Game, Player, Question, ScreenView } from '@/types/Types'
 import {
   createContext,
   useContext,
@@ -12,19 +12,21 @@ import type { Socket } from 'socket.io-client'
 
 export interface GameLogicContextType {
   view: string
-  roomId: string
   players: Player[]
-  question: any
-  gameResult: any
-  playerInfo: { name: string; score: number }
-  lastAnswerResult: boolean | null
-  nameInputRef: React.RefObject<HTMLInputElement | null>
-  roomInputRef: React.RefObject<HTMLInputElement | null>
+  isHostRef: React.RefObject<boolean>
+  isCurrentPlayerRoundRef: React.RefObject<boolean>
+  isWaitingAnwser: boolean
+  nameInputRef: React.RefObject<HTMLInputElement>
+  roomInputRef: React.RefObject<HTMLInputElement>
+  roomIdRef: React.RefObject<string>
+  currentQuestionRef: React.RefObject<Question | null>
+  currentPlayerRef: React.RefObject<Player | null>
+  currentRoundRef: React.RefObject<number>
   handleCreateGame: () => void
   handleJoinGame: () => void
   handleStartGame: () => void
-  handleNextQuestion: () => void
-  handleAnswerSubmit: (answer: number) => void
+  handleNextRound: () => void
+  handleSubmitAnswer: (answer: number) => void
 }
 
 const GameLogicContext = createContext<GameLogicContextType | undefined>(
@@ -32,54 +34,97 @@ const GameLogicContext = createContext<GameLogicContextType | undefined>(
 )
 
 export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
+  const [view, setView] = useState<ScreenView>('home')
+
   const [socket, setSocket] = useState<Socket>()
-  const [view, setView] = useState<string>('home')
-  const [roomId, setRoomId] = useState<string>('')
   const [players, setPlayers] = useState<Player[]>([])
-  const [question, setQuestion] = useState(null)
-  const [gameResult, setGameResult] = useState(null)
-  const [playerInfo, setPlayerInfo] = useState({ name: '', score: 0 })
-  const [lastAnswerResult, setLastAnswerResult] = useState(null)
+  const [isWaitingAnwser, setIsWaitingAnwser] = useState(false)
 
   const nameInputRef = useRef<HTMLInputElement>(null)
   const roomInputRef = useRef<HTMLInputElement>(null)
+
+  const roomIdRef = useRef<string>('')
+  const isHostRef = useRef<boolean>(false)
+  const isCurrentPlayerRoundRef = useRef<boolean>(false)
+  const currentQuestionRef = useRef<Question | null>(null)
+  const currentPlayerRef = useRef<Player | null>(null)
+  const currentRoundRef = useRef<number>(0)
 
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
       autoConnect: false,
     })
+
+    // if (!newSocket?.connected) {
+    //   return
+    // }
+
     setSocket(newSocket)
 
     newSocket.on('connect', () =>
       console.log('Socket conectado!', newSocket.id),
     )
-    newSocket.on('game-created', (newRoomId) => {
-      setRoomId(newRoomId)
-      setView('host')
+
+    newSocket.on('game-created', (newRoomId: string) => {
+      roomIdRef.current = newRoomId
+      isHostRef.current = true
+      setView('pre-game')
     })
-    newSocket.on('player-joined', (updatedPlayers) => {
-      setPlayers(updatedPlayers)
+
+    newSocket.on('player-joined', (gameState: Game) => {
+      setPlayers(gameState.players)
     })
-    newSocket.on('join-success', () => {
-      setView('lobby')
+
+    newSocket.on('join-success', (newRoomId: string) => {
+      roomIdRef.current = newRoomId
+      setView('pre-game')
     })
-    newSocket.on('new-question', (q) => {
-      setQuestion(q)
-      setLastAnswerResult(null)
-      setView((view) => (view === 'host' ? 'host' : 'player-question'))
+
+    newSocket.on('round-updated', (gameState: Game) => {
+      console.log('Round updated received:', gameState)
+
+      setPlayers(gameState.players)
+      currentQuestionRef.current = gameState.currentQuestion
+      currentPlayerRef.current = gameState.currentPlayer
+      currentRoundRef.current = gameState.currentRound
+      isCurrentPlayerRoundRef.current =
+        currentPlayerRef.current?.id === newSocket.id
+      setIsWaitingAnwser(!gameState.hasPlayerAnswered)
+      gameState.currentRound === 1 &&
+        setView(isHostRef.current ? 'host' : 'player')
     })
-    newSocket.on('answer-result', ({ isCorrect, score }) => {
-      setLastAnswerResult(isCorrect)
-      setPlayerInfo((p) => ({ ...p, score }))
+
+    newSocket.on(
+      'answer-result',
+      ({ result, advance }: { result: boolean; advance: number }) => {
+        console.log('answer-result')
+        if (currentPlayerRef.current?.id === newSocket.id) {
+          if (result) {
+            // handleCorretAnswer()
+          } else {
+            // handleWrongAnswer()
+          }
+        }
+      },
+    )
+
+    newSocket.on(
+      'player-answered',
+      ({ result, advance }: { result: boolean; advance: number }) => {
+        console.log('player-answered')
+      },
+    )
+
+    newSocket.on('game-over', (gameState: Game) => {
+      setPlayers(gameState.players)
+      currentQuestionRef.current = gameState.currentQuestion
+      currentPlayerRef.current = gameState.currentPlayer
+      currentRoundRef.current = gameState.currentRound
+      setIsWaitingAnwser(!gameState.hasPlayerAnswered)
+      setView('result')
     })
-    newSocket.on('game-state-update', (game) => {
-      setPlayers(game.players)
-    })
-    newSocket.on('game-over', (finalScores) => {
-      setGameResult(finalScores)
-      setView('game-over')
-    })
-    newSocket.on('error', (message) => {
+
+    newSocket.on('error', (message: string) => {
       alert(`Erro: ${message}`)
     })
 
@@ -87,7 +132,7 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       console.log('Desconectando o socket...')
-      newSocket.disconnect()
+      newSocket?.disconnect()
     }
   }, [])
 
@@ -100,42 +145,40 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
     const gameRoomId = roomInputRef.current?.value || ''
 
     if (playerName && gameRoomId) {
-      setPlayerInfo({ name: playerName, score: 0 })
-      setRoomId(gameRoomId)
-      socket?.emit('join-game', { roomId: gameRoomId, playerName })
+      socket?.emit('join-game', { roomId: gameRoomId, playerName: playerName })
     }
   }
 
   const handleStartGame = () => {
-    socket?.emit('start-game', roomId)
+    socket?.emit('start-game', roomIdRef.current)
   }
 
-  const handleNextQuestion = () => {
-    setQuestion(null)
-    socket?.emit('next-question', roomId)
+  const handleNextRound = () => {
+    socket?.emit('next-round', roomIdRef.current)
   }
 
-  const handleAnswerSubmit = (answer: number) => {
-    socket?.emit('submit-answer', { roomId, answer })
-    setView('lobby')
+  const handleSubmitAnswer = (answer: number) => {
+    socket?.emit('submit-answer', { roomId: roomIdRef.current, answer: answer })
   }
 
   const contextValue: GameLogicContextType = {
     view,
-    roomId,
     players,
-    question,
-    gameResult,
-    playerInfo,
-    lastAnswerResult,
+    isHostRef,
+    isCurrentPlayerRoundRef,
+    isWaitingAnwser,
     nameInputRef,
     roomInputRef,
+    roomIdRef,
+    currentQuestionRef,
+    currentPlayerRef,
+    currentRoundRef,
     handleCreateGame,
     handleJoinGame,
     handleStartGame,
-    handleNextQuestion,
-    handleAnswerSubmit,
-  }
+    handleNextRound,
+    handleSubmitAnswer,
+  } as GameLogicContextType
   return (
     <GameLogicContext.Provider value={contextValue}>
       {children}

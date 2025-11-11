@@ -61,9 +61,10 @@ export const initializeWebSocket = (server: http.Server) => {
             currentQuestion: null,
             currentPlayer: null,
             currentRound: games[roomId].currentRound,
+            hasPlayerAnswered: false,
           } as GameStateSend);
 
-          socket.emit("join-success");
+          socket.emit("join-success", roomId);
 
           console.log(`Player ${playerName} joined room ${roomId}`);
         } else {
@@ -100,21 +101,27 @@ export const initializeWebSocket = (server: http.Server) => {
   });
 
   function handleNextRound(roomId: string) {
+    console.log(`Handling next round for room ${roomId}`);
+
     if (!games[roomId]) return;
 
     games[roomId].currentRound += 1;
     const roundPlayerPosition = fetchRoundPlayerPosition(roomId);
-    if (roundPlayerPosition) {
+    if (roundPlayerPosition !== null && roundPlayerPosition !== undefined) {
+      console.log(
+        `Setting current player for room ${roomId} - position: ${roundPlayerPosition}`
+      );
       games[roomId].currentPlayer = games[roomId].players[roundPlayerPosition];
     } else {
+      console.log(`No current player for room ${roomId}`);
       games[roomId].currentPlayer = null;
     }
-    const roundQuestionrPosition = fetchRoundQuestionPosition(roomId);
-    if (roundQuestionrPosition) {
+    const roundQuestionPosition = fetchRoundQuestionPosition(roomId);
+    if (roundQuestionPosition !== null && roundQuestionPosition !== undefined) {
       games[roomId].currentQuestion =
-        games[roomId].questions[roundQuestionrPosition];
+        games[roomId].questions[roundQuestionPosition];
     } else {
-      games[roomId].currentPlayer = null;
+      games[roomId].currentQuestion = null;
     }
 
     const gameState: GameStateSend = {
@@ -125,6 +132,7 @@ export const initializeWebSocket = (server: http.Server) => {
       } as QuestionSend,
       currentPlayer: games[roomId].currentPlayer,
       currentRound: games[roomId].currentRound,
+      hasPlayerAnswered: false,
     };
 
     io.to(roomId).emit("round-updated", gameState);
@@ -140,6 +148,9 @@ export const initializeWebSocket = (server: http.Server) => {
     const playersCount = game.players.length;
     const playerPosition = gameRound % playersCount;
 
+    console.log(
+      `Fetching player position for room ${roomId} - position: ${playerPosition}`
+    );
     return playerPosition;
   }
 
@@ -171,6 +182,7 @@ export const initializeWebSocket = (server: http.Server) => {
       } as QuestionSend,
       currentPlayer: games[roomId].currentPlayer,
       currentRound: games[roomId].currentRound,
+      hasPlayerAnswered: true,
     };
 
     io.to(roomId).emit("round-updated", gameState);

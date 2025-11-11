@@ -1,22 +1,21 @@
-import type { Socket } from 'socket.io-client'
-
 export interface Player {
-  id: string;
-  name: string;
-  score: number;
+  id: string
+  name: string
+  position: number
+  correct_answers: number
 }
 
 export interface Question {
-  question: string;
-  options: string[];
-  questionNumber: number;
-  totalQuestions: number;
+  question: string
+  options: string[]
 }
 
 export interface Game {
-  hostId: Socket["id"];
-  currentQuestionIndex: number;
-  playerPositionIndex: { [key: Player["id"]]: number };
-  players: Player[];
-  questions: Question[];
+  players: Player[]
+  currentQuestion: Question | null
+  currentPlayer: Player | null
+  currentRound: number
+  hasPlayerAnswered: boolean
 }
+
+export type ScreenView = 'home' | 'pre-game' | 'host' | 'player' | 'result'
