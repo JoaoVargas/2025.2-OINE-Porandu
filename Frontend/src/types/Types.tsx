@@ -19,3 +19,9 @@ export interface Game {
 }
 
 export type ScreenView = 'home' | 'pre-game' | 'host' | 'player' | 'result'
+
+export interface AnswerResponse {
+  result: boolean
+  optionCorrect: number
+  optionSelected: number
+}

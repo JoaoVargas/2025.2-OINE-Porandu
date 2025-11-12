@@ -28,7 +28,7 @@ export const initializeWebSocket = (server: http.Server) => {
         currentRound: 0,
         currentPlayer: null,
         currentQuestion: null,
-        totalPositions: 5,
+        totalPositions: 20,
       };
 
       socket.emit("game-created", roomId);
@@ -167,9 +167,9 @@ export const initializeWebSocket = (server: http.Server) => {
     const isCorrect = games[roomId].currentQuestion?.answer === answer;
 
     if (isCorrect) {
-      handleCorrectAnswer(roomId, socket);
+      handleCorrectAnswer(roomId, socket, answer);
     } else {
-      handleWrongAnswer(roomId, socket);
+      handleWrongAnswer(roomId, socket, answer);
     }
 
     const gameState: GameStateSend = {
@@ -186,7 +186,7 @@ export const initializeWebSocket = (server: http.Server) => {
     io.to(roomId).emit("round-updated", gameState);
   }
 
-  function handleCorrectAnswer(roomId: string, socket: Socket) {
+  function handleCorrectAnswer(roomId: string, socket: Socket, answer: number) {
     if (!games[roomId] || !games[roomId].currentPlayer) return;
 
     const postionsToAdvance = rollD6();
@@ -194,11 +194,18 @@ export const initializeWebSocket = (server: http.Server) => {
     games[roomId].currentPlayer.position += postionsToAdvance;
     games[roomId].currentPlayer.correct_answers += 1;
 
-    socket.emit("answer-result", { result: true, advance: postionsToAdvance });
+    socket.emit("answer-result", {
+      result: true,
+      advance: postionsToAdvance,
+      optionCorrect: games[roomId].currentQuestion?.answer,
+      optionSelected: answer,
+    });
 
     io.to(games[roomId].hostId).emit("player-answered", {
       result: true,
       advance: postionsToAdvance,
+      optionCorrect: games[roomId].currentQuestion?.answer,
+      optionSelected: answer,
     });
 
     if (games[roomId].currentPlayer.position >= games[roomId].totalPositions) {
@@ -211,18 +218,25 @@ export const initializeWebSocket = (server: http.Server) => {
     return Math.floor(Math.random() * 6) + 1;
   }
 
-  function handleWrongAnswer(roomId: string, socket: Socket) {
+  function handleWrongAnswer(roomId: string, socket: Socket, answer: number) {
     if (!games[roomId] || !games[roomId].currentPlayer) return;
 
     const postionsToAdvance = 1;
 
     games[roomId].currentPlayer.position += postionsToAdvance;
 
-    socket.emit("answer-result", { result: false, advance: postionsToAdvance });
+    socket.emit("answer-result", {
+      result: false,
+      advance: postionsToAdvance,
+      optionCorrect: games[roomId].currentQuestion?.answer,
+      optionSelected: answer,
+    });
 
     io.to(games[roomId].hostId).emit("player-answered", {
       result: false,
       advance: postionsToAdvance,
+      optionCorrect: games[roomId].currentQuestion?.answer,
+      optionSelected: answer,
     });
 
     if (games[roomId].currentPlayer.position >= games[roomId].totalPositions) {

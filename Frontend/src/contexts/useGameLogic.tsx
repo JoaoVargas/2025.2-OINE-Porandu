@@ -2,7 +2,13 @@ import { io } from 'socket.io-client'
 import NoSleep from 'nosleep.js'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { Game, Player, Question, ScreenView } from '@/types/Types'
+import type {
+  AnswerResponse,
+  Game,
+  Player,
+  Question,
+  ScreenView,
+} from '@/types/Types'
 import type { Socket } from 'socket.io-client'
 
 export interface GameLogicContextType {
@@ -11,6 +17,7 @@ export interface GameLogicContextType {
   isHostRef: React.RefObject<boolean>
   isCurrentPlayerRoundRef: React.RefObject<boolean>
   isWaitingAnwser: boolean
+  anwserResponse: AnswerResponse | null
   nameInputRef: React.RefObject<HTMLInputElement>
   roomInputRef: React.RefObject<HTMLInputElement>
   roomIdRef: React.RefObject<string>
@@ -39,6 +46,9 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
   const [socket, setSocket] = useState<Socket>()
   const [players, setPlayers] = useState<Array<Player>>([])
   const [isWaitingAnwser, setIsWaitingAnwser] = useState(false)
+  const [anwserResponse, setAnwserResponse] = useState<AnswerResponse | null>(
+    null,
+  )
 
   const nameInputRef = useRef<HTMLInputElement>(null)
   const roomInputRef = useRef<HTMLInputElement>(null)
@@ -49,6 +59,12 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
   const currentQuestionRef = useRef<Question | null>(null)
   const currentPlayerRef = useRef<Player | null>(null)
   const currentRoundRef = useRef<number>(0)
+
+  useEffect(() => {
+    if (isWaitingAnwser) {
+      setAnwserResponse(null)
+    }
+  }, [isWaitingAnwser])
 
   useEffect(() => {
     const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
@@ -92,12 +108,24 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
 
     newSocket.on(
       'answer-result',
-      ({ result, advance }: { result: boolean; advance: number }) => {
+      ({
+        result,
+        advance,
+        optionCorrect,
+        optionSelected,
+      }: {
+        result: boolean
+        advance: number
+        optionCorrect: number
+        optionSelected: number
+      }) => {
         console.log('answer-result')
         if (currentPlayerRef.current?.id === newSocket.id) {
           if (result) {
             // handleCorretAnswer()
+            setAnwserResponse({ result, optionCorrect, optionSelected })
           } else {
+            setAnwserResponse({ result, optionCorrect, optionSelected })
             // handleWrongAnswer()
           }
         }
@@ -106,8 +134,20 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
 
     newSocket.on(
       'player-answered',
-      ({ result, advance }: { result: boolean; advance: number }) => {
+      ({
+        result,
+        advance,
+        optionCorrect,
+        optionSelected,
+      }: {
+        result: boolean
+        advance: number
+        optionCorrect: number
+        optionSelected: number
+      }) => {
         console.log('player-answered', result, advance)
+
+        setAnwserResponse({ result, optionCorrect, optionSelected })
       },
     )
 
@@ -166,6 +206,7 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
 
   const handleNextRound = () => {
     socket?.emit('next-round', roomIdRef.current)
+    setAnwserResponse(null)
   }
 
   const handleSubmitAnswer = (answer: number) => {
@@ -196,6 +237,7 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
     isHostRef,
     isCurrentPlayerRoundRef,
     isWaitingAnwser,
+    anwserResponse,
     nameInputRef,
     roomInputRef,
     roomIdRef,

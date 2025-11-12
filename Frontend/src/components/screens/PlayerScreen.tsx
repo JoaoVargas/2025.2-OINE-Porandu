@@ -6,6 +6,7 @@ export default function PlayerScreen() {
     currentQuestionRef,
     handleSubmitAnswer,
     isWaitingAnwser,
+    anwserResponse,
   } = useGameLogic()
 
   if (!isCurrentPlayerRoundRef.current) {
@@ -36,8 +37,13 @@ export default function PlayerScreen() {
             w-full h-full py-3 rounded-md text-xl font-bold 
             ${
               isWaitingAnwser
-                ? 'cursor-pointer bg-red-600 hover:bg-red-700 transition-transform transform hover:scale-105 active:scale-105'
-                : 'bg-red-600/40 text-white/60'
+                ? 'cursor-pointer bg-orange-600 hover:bg-orange-700 transition-transform transform hover:scale-105 active:scale-105'
+                : anwserResponse?.optionCorrect === 0
+                  ? 'bg-green-600 scale-105'
+                  : anwserResponse?.result === false &&
+                      anwserResponse.optionSelected === 0
+                    ? 'bg-red-600 scale-105'
+                    : 'bg-orange-600/40 text-white/60'
             }`}
         >
           {currentQuestionRef.current?.options[0]}
@@ -51,8 +57,13 @@ export default function PlayerScreen() {
             w-full h-full py-3 rounded-md text-xl font-bold 
             ${
               isWaitingAnwser
-                ? 'cursor-pointer bg-green-600 hover:bg-green-700 transition-transform transform hover:scale-105 active:scale-105'
-                : 'bg-green-600/40 text-white/60'
+                ? 'cursor-pointer bg-blue-600 hover:bg-blue-700 transition-transform transform hover:scale-105 active:scale-105'
+                : anwserResponse?.optionCorrect === 1
+                  ? 'bg-green-600 scale-105'
+                  : anwserResponse?.result === false &&
+                      anwserResponse.optionSelected === 1
+                    ? 'bg-red-600 scale-105'
+                    : 'bg-blue-600/40 text-white/60'
             }`}
         >
           {currentQuestionRef.current?.options[1]}
@@ -67,7 +78,12 @@ export default function PlayerScreen() {
             ${
               isWaitingAnwser
                 ? 'cursor-pointer bg-yellow-600 hover:bg-yellow-700 transition-transform transform hover:scale-105 active:scale-105'
-                : 'bg-yellow-600/40 text-white/60'
+                : anwserResponse?.optionCorrect === 2
+                  ? 'bg-green-600 scale-105'
+                  : anwserResponse?.result === false &&
+                      anwserResponse.optionSelected === 2
+                    ? 'bg-red-600 scale-105'
+                    : 'bg-yellow-600/40 text-white/60'
             }`}
         >
           {currentQuestionRef.current?.options[2]}
@@ -82,7 +98,12 @@ export default function PlayerScreen() {
             ${
               isWaitingAnwser
                 ? 'cursor-pointer bg-purple-600 hover:bg-purple-700 transition-transform transform hover:scale-105 active:scale-105'
-                : 'bg-purple-600/40 text-white/60'
+                : anwserResponse?.optionCorrect === 3
+                  ? 'bg-green-600 scale-105'
+                  : anwserResponse?.result === false &&
+                      anwserResponse.optionSelected === 3
+                    ? 'bg-red-600 scale-105'
+                    : 'bg-purple-600/40 text-white/60'
             }`}
         >
           {currentQuestionRef.current?.options[3]}
