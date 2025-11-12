@@ -1,38 +1,58 @@
 import { useGameLogic } from '@/contexts/useGameLogic'
 
 export default function ResultScreen() {
-  const {  } = useGameLogic()
-
-  function handleGoHome() {
-    window.location.reload()
-  }
+  const { players, handlePlayAgain } = useGameLogic()
 
   return (
-    <div className="text-center space-y-6">
-      {/* <h1 className="text-6xl font-extrabold text-yellow-400">Fim de Jogo!</h1>
-      <div className="p-8 bg-gray-800 rounded-lg shadow-xl">
-        <h2 className="text-4xl font-bold mb-6">Pontuações Finais</h2>
-        <ul className="space-y-3">
-          {results &&
-            results.map((player, index) => (
-              <li
+    <div className="">
+      <div className="h-full w-full bg-gray-800 rounded-lg p-4 gap-4 flex flex-col">
+        <span className="text-lg font-bold text-center">Ranking posição</span>
+        <div className="flex flex-col gap-4 w-full overflow-scroll">
+          {players
+            .sort(
+              (player1, player2) => (player1.position - player2.position) * -1,
+            )
+            .map((player) => (
+              <div
                 key={player.id}
-                className={`text-2xl p-4 rounded-md flex justify-between items-center ${index === 0 ? 'bg-yellow-600' : 'bg-gray-700'}`}
+                className=" bg-gray-700 rounded-lg p-4 gap-4 flex flex-row justify-between"
               >
-                <span>
-                  {index + 1}. {player.name}
-                </span>
-                <span className="font-bold">{player.score} pts</span>
-              </li>
+                <span className="text-xl truncate ">{player.name}</span>
+                <span className="text-xl font-bold">{player.position}</span>
+              </div>
             ))}
-        </ul>
+        </div>
       </div>
+      <div className="h-full w-full bg-gray-800 rounded-lg p-4 gap-4 flex flex-col">
+        <span className="text-lg font-bold text-center">
+          Ranking perguntas acertadas
+        </span>
+        <div className="flex flex-col gap-4 w-full overflow-scroll justify-center">
+          {players
+            .sort(
+              (player1, player2) =>
+                (player1.correct_answers - player2.correct_answers) * -1,
+            )
+            .map((player) => (
+              <div
+                key={player.id}
+                className=" bg-gray-700 rounded-lg p-4 gap-4 flex flex-row justify-between"
+              >
+                <span className="text-xl truncate">{player.name}</span>
+                <span className="text-xl font-bold">
+                  {player.correct_answers}
+                </span>
+              </div>
+            ))}
+        </div>
+      </div>
+
       <button
-        onClick={handleGoHome}
-        className="w-full py-3 mt-6 bg-blue-600 hover:bg-blue-700 rounded-md text-xl font-bold transition-transform transform hover:scale-105"
+        onClick={handlePlayAgain}
+        className="cursor-pointer w-full py-3 bg-green-600 hover:bg-green-700 rounded-md text-xl font-bold transition-transform transform hover:scale-105"
       >
         Jogar Novamente
-      </button> */}
+      </button>
     </div>
   )
 }
