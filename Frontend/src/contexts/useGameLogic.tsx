@@ -1,18 +1,13 @@
-import type { Game, Player, Question, ScreenView } from '@/types/Types'
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react'
 import { io } from 'socket.io-client'
+import NoSleep from 'nosleep.js'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
+import type { Game, Player, Question, ScreenView } from '@/types/Types'
 import type { Socket } from 'socket.io-client'
 
 export interface GameLogicContextType {
   view: string
-  players: Player[]
+  players: Array<Player>
   isHostRef: React.RefObject<boolean>
   isCurrentPlayerRoundRef: React.RefObject<boolean>
   isWaitingAnwser: boolean
@@ -27,6 +22,9 @@ export interface GameLogicContextType {
   handleStartGame: () => void
   handleNextRound: () => void
   handleSubmitAnswer: (answer: number) => void
+  handlePlayAgain: () => void
+  enableWakeLock: () => void
+  disableWakeLock: () => void
 }
 
 const GameLogicContext = createContext<GameLogicContextType | undefined>(
@@ -34,10 +32,12 @@ const GameLogicContext = createContext<GameLogicContextType | undefined>(
 )
 
 export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
+  const [noSleep, setNoSleep] = useState<NoSleep>()
+
   const [view, setView] = useState<ScreenView>('home')
 
   const [socket, setSocket] = useState<Socket>()
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState<Array<Player>>([])
   const [isWaitingAnwser, setIsWaitingAnwser] = useState(false)
 
   const nameInputRef = useRef<HTMLInputElement>(null)
@@ -55,10 +55,6 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
       autoConnect: false,
     })
 
-    // if (!newSocket?.connected) {
-    //   return
-    // }
-
     setSocket(newSocket)
 
     newSocket.on('connect', () =>
@@ -75,9 +71,9 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
       setPlayers(gameState.players)
     })
 
-    newSocket.on('join-success', (newRoomId: string) => {
+    newSocket.on('join-success', (newRoomId: string, gameState: Game) => {
       roomIdRef.current = newRoomId
-      setView('pre-game')
+      setView(gameState.currentRound === 0 ? 'pre-game' : 'player')
     })
 
     newSocket.on('round-updated', (gameState: Game) => {
@@ -111,7 +107,7 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
     newSocket.on(
       'player-answered',
       ({ result, advance }: { result: boolean; advance: number }) => {
-        console.log('player-answered')
+        console.log('player-answered', result, advance)
       },
     )
 
@@ -124,6 +120,10 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
       setView('result')
     })
 
+    newSocket.on('host-disconnected', () => {
+      setView('home')
+    })
+
     newSocket.on('error', (message: string) => {
       alert(`Erro: ${message}`)
     })
@@ -132,15 +132,26 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       console.log('Desconectando o socket...')
-      newSocket?.disconnect()
+      newSocket.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const ns = new NoSleep()
+    setNoSleep(ns)
+
+    return () => {
+      ns.disable()
     }
   }, [])
 
   const handleCreateGame = () => {
+    enableWakeLock()
     socket?.emit('create-game')
   }
 
   const handleJoinGame = () => {
+    enableWakeLock()
     const playerName = nameInputRef.current?.value || ''
     const gameRoomId = roomInputRef.current?.value || ''
 
@@ -161,6 +172,24 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
     socket?.emit('submit-answer', { roomId: roomIdRef.current, answer: answer })
   }
 
+  function handlePlayAgain() {
+    window.location.reload()
+  }
+
+  const enableWakeLock = () => {
+    if (noSleep) {
+      noSleep.enable()
+      console.log('Wake lock enabled')
+    }
+  }
+
+  const disableWakeLock = () => {
+    if (noSleep) {
+      noSleep.disable()
+      console.log('Wake lock disabled')
+    }
+  }
+
   const contextValue: GameLogicContextType = {
     view,
     players,
@@ -178,6 +207,9 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
     handleStartGame,
     handleNextRound,
     handleSubmitAnswer,
+    handlePlayAgain,
+    enableWakeLock,
+    disableWakeLock,
   } as GameLogicContextType
   return (
     <GameLogicContext.Provider value={contextValue}>

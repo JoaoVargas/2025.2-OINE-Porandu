@@ -7,11 +7,11 @@ export interface Player {
 
 export interface Question {
   question: string
-  options: string[]
+  options: Array<string>
 }
 
 export interface Game {
-  players: Player[]
+  players: Array<Player>
   currentQuestion: Question | null
   currentPlayer: Player | null
   currentRound: number

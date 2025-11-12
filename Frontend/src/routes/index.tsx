@@ -1,10 +1,10 @@
+import { useMemo } from 'react'
 import ResultScreen from '@/components/screens/ResultScreen'
 import HomeScreen from '@/components/screens/HomeScreen'
 import HostScreen from '@/components/screens/HostScreen'
 import PreGameScreen from '@/components/screens/PreGameScreen'
 import PlayerScreen from '@/components/screens/PlayerScreen'
 import { useGameLogic } from '@/contexts/useGameLogic'
-import { useMemo } from 'react'
 
 export default function App() {
   const { view } = useGameLogic()

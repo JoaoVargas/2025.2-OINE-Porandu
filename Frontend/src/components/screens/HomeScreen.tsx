@@ -1,10 +1,15 @@
-import { useGameLogic } from '@/contexts/useGameLogic'
 import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
+import { useGameLogic } from '@/contexts/useGameLogic'
 
 export default function HomeScreen() {
-  const { nameInputRef, roomInputRef, handleJoinGame, handleCreateGame } =
-    useGameLogic()
+  const {
+    nameInputRef,
+    roomInputRef,
+    handleJoinGame,
+    handleCreateGame,
+    enableWakeLock,
+  } = useGameLogic()
 
   const [url, setUrl] = useState('')
 
@@ -17,7 +22,10 @@ export default function HomeScreen() {
       <div className=" order-last md:order-first">
         {url && (
           <div className="p-4 bg-white rounded-lg">
-            <QRCodeSVG className="h-[80vw] w-[80vw] md:h-[40vh] md:w-[40vh] max-w-[90vw]" value={url}  />
+            <QRCodeSVG
+              className="h-[80vw] w-[80vw] md:h-[40vh] md:w-[40vh] max-w-[90vw]"
+              value={url}
+            />
           </div>
         )}
       </div>

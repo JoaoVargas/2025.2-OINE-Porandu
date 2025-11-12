@@ -1,6 +1,6 @@
-import { useGameLogic } from '@/contexts/useGameLogic'
-import { QRCodeSVG } from 'qrcode.react'
 import { useEffect, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
+import { useGameLogic } from '@/contexts/useGameLogic'
 
 export default function PreGameScreen() {
   const { handleStartGame, players, isHostRef, roomIdRef } = useGameLogic()
@@ -20,7 +20,7 @@ export default function PreGameScreen() {
         <div className="p-8 bg-gray-800 rounded-lg shadow-xl gap-6 flex flex-col md:flex-row w-full items-center">
           <div className="max-h-[65vh] w-full overflow-scroll flex flex-col gap-4">
             {players.length > 0 ? (
-              players?.map((player) => (
+              players.map((player) => (
                 <div key={player.id} className=" bg-gray-700 rounded-lg p-4">
                   <span className="text-xl truncate block w-full">
                     {player.name}

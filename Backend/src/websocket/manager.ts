@@ -28,7 +28,7 @@ export const initializeWebSocket = (server: http.Server) => {
         currentRound: 0,
         currentPlayer: null,
         currentQuestion: null,
-        totalPositions: 3,
+        totalPositions: 5,
       };
 
       socket.emit("game-created", roomId);
@@ -40,11 +40,6 @@ export const initializeWebSocket = (server: http.Server) => {
       "join-game",
       ({ roomId, playerName }: { roomId: string; playerName: string }) => {
         if (games[roomId]) {
-          if (games[roomId].currentRound > 0) {
-            socket.emit("error", "Game has already started");
-            return;
-          }
-
           socket.join(roomId);
 
           const newPlayer: Player = {
@@ -56,15 +51,17 @@ export const initializeWebSocket = (server: http.Server) => {
 
           games[roomId].players.push(newPlayer);
 
-          io.to(roomId).emit("player-joined", {
+          const gameState: GameStateSend = {
             players: games[roomId].players,
             currentQuestion: null,
             currentPlayer: null,
             currentRound: games[roomId].currentRound,
             hasPlayerAnswered: false,
-          } as GameStateSend);
+          };
 
-          socket.emit("join-success", roomId);
+          io.to(roomId).emit("player-joined", gameState);
+
+          socket.emit("join-success", roomId, gameState);
 
           console.log(`Player ${playerName} joined room ${roomId}`);
         } else {
@@ -97,6 +94,7 @@ export const initializeWebSocket = (server: http.Server) => {
 
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}`);
+      removePlayerFromGames(socket);
     });
   });
 
@@ -246,5 +244,46 @@ export const initializeWebSocket = (server: http.Server) => {
     };
 
     io.to(roomId).emit("game-over", gameState);
+  }
+
+  function removePlayerFromGames(socket: Socket) {
+    for (const roomId of Object.keys(games)) {
+      if (!games[roomId]) continue;
+
+      if (games[roomId].hostId === socket.id) {
+        io.to(roomId).emit("host-disconnected");
+        delete games[roomId];
+        console.log(`Host ${socket.id} disconnected, game ${roomId} ended`);
+        continue;
+      }
+
+      const playerIndex = games[roomId].players.findIndex(
+        (p) => p.id === socket.id
+      );
+      if (playerIndex !== -1) {
+        const removed = games[roomId].players.splice(playerIndex, 1)[0];
+
+        if (games[roomId].currentPlayer?.id === removed.id) {
+          games[roomId].currentPlayer = null;
+        }
+
+        const gameState: GameStateSend = {
+          players: games[roomId].players,
+          currentQuestion: {
+            question: games[roomId].currentQuestion?.question,
+            options: games[roomId].currentQuestion?.options,
+          } as QuestionSend,
+          currentPlayer: games[roomId].currentPlayer,
+          currentRound: games[roomId].currentRound,
+          hasPlayerAnswered: false,
+        };
+
+        io.to(roomId).emit("round-updated", gameState);
+
+        console.log(
+          `Player ${removed.name} (${removed.id}) removed from room ${roomId}`
+        );
+      }
+    }
   }
 };
