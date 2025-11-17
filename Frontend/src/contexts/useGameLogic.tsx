@@ -122,11 +122,19 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
         console.log('answer-result')
         if (currentPlayerRef.current?.id === newSocket.id) {
           if (result) {
-            // handleCorretAnswer()
-            setAnwserResponse({ result, optionCorrect, optionSelected })
+            setAnwserResponse({
+              result,
+              optionCorrect,
+              optionSelected,
+              advance,
+            })
           } else {
-            setAnwserResponse({ result, optionCorrect, optionSelected })
-            // handleWrongAnswer()
+            setAnwserResponse({
+              result,
+              optionCorrect,
+              optionSelected,
+              advance,
+            })
           }
         }
       },
@@ -147,7 +155,7 @@ export const GameLogicProvider = ({ children }: { children: ReactNode }) => {
       }) => {
         console.log('player-answered', result, advance)
 
-        setAnwserResponse({ result, optionCorrect, optionSelected })
+        setAnwserResponse({ result, optionCorrect, optionSelected, advance })
       },
     )
 

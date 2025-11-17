@@ -1,3 +1,4 @@
+import { DiceRoll } from '../DiceRoll/DiceRoll'
 import { useGameLogic } from '@/contexts/useGameLogic'
 
 export default function PlayerScreen() {
@@ -21,19 +22,24 @@ export default function PlayerScreen() {
   }
 
   return (
-    <div className="grid grid-cols-11 grid-rows-11 gap-8 h-full p-8">
-      <div className="col-span-11 row-span-3">
-        <div className="h-full w-full bg-gray-800 rounded-lg p-4 flex items-center justify-center">
-          <span className="text-center">
-            {currentQuestionRef.current?.question}
-          </span>
+    <>
+      <DiceRoll
+        advance={anwserResponse?.advance || 0}
+        isVisible={anwserResponse?.result === true}
+      />
+      <div className="grid grid-cols-11 grid-rows-11 gap-8 h-full p-8">
+        <div className="col-span-11 row-span-3">
+          <div className="h-full w-full bg-gray-800 rounded-lg p-4 flex items-center justify-center">
+            <span className="text-center">
+              {currentQuestionRef.current?.question}
+            </span>
+          </div>
         </div>
-      </div>
-      <div className="col-span-11 row-span-2">
-        <button
-          disabled={!isWaitingAnwser}
-          onClick={() => handleSubmitAnswer(0)}
-          className={`
+        <div className="col-span-11 row-span-2">
+          <button
+            disabled={!isWaitingAnwser}
+            onClick={() => handleSubmitAnswer(0)}
+            className={`
             w-full h-full py-3 rounded-md text-xl font-bold 
             ${
               isWaitingAnwser
@@ -45,15 +51,15 @@ export default function PlayerScreen() {
                     ? 'bg-red-600 scale-105'
                     : 'bg-orange-600/40 text-white/60'
             }`}
-        >
-          {currentQuestionRef.current?.options[0]}
-        </button>
-      </div>
-      <div className="col-span-11 row-span-2">
-        <button
-          disabled={!isWaitingAnwser}
-          onClick={() => handleSubmitAnswer(1)}
-          className={`
+          >
+            {currentQuestionRef.current?.options[0]}
+          </button>
+        </div>
+        <div className="col-span-11 row-span-2">
+          <button
+            disabled={!isWaitingAnwser}
+            onClick={() => handleSubmitAnswer(1)}
+            className={`
             w-full h-full py-3 rounded-md text-xl font-bold 
             ${
               isWaitingAnwser
@@ -65,15 +71,15 @@ export default function PlayerScreen() {
                     ? 'bg-red-600 scale-105'
                     : 'bg-blue-600/40 text-white/60'
             }`}
-        >
-          {currentQuestionRef.current?.options[1]}
-        </button>
-      </div>
-      <div className="col-span-11 row-span-2">
-        <button
-          disabled={!isWaitingAnwser}
-          onClick={() => handleSubmitAnswer(2)}
-          className={`
+          >
+            {currentQuestionRef.current?.options[1]}
+          </button>
+        </div>
+        <div className="col-span-11 row-span-2">
+          <button
+            disabled={!isWaitingAnwser}
+            onClick={() => handleSubmitAnswer(2)}
+            className={`
             w-full h-full py-3 rounded-md text-xl font-bold 
             ${
               isWaitingAnwser
@@ -85,15 +91,15 @@ export default function PlayerScreen() {
                     ? 'bg-red-600 scale-105'
                     : 'bg-yellow-600/40 text-white/60'
             }`}
-        >
-          {currentQuestionRef.current?.options[2]}
-        </button>
-      </div>
-      <div className="col-span-11 row-span-2">
-        <button
-          disabled={!isWaitingAnwser}
-          onClick={() => handleSubmitAnswer(3)}
-          className={`
+          >
+            {currentQuestionRef.current?.options[2]}
+          </button>
+        </div>
+        <div className="col-span-11 row-span-2">
+          <button
+            disabled={!isWaitingAnwser}
+            onClick={() => handleSubmitAnswer(3)}
+            className={`
             w-full h-full py-3 rounded-md text-xl font-bold 
             ${
               isWaitingAnwser
@@ -105,10 +111,11 @@ export default function PlayerScreen() {
                     ? 'bg-red-600 scale-105'
                     : 'bg-purple-600/40 text-white/60'
             }`}
-        >
-          {currentQuestionRef.current?.options[3]}
-        </button>
+          >
+            {currentQuestionRef.current?.options[3]}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -24,4 +24,5 @@ export interface AnswerResponse {
   result: boolean
   optionCorrect: number
   optionSelected: number
+  advance: number
 }
