@@ -28,7 +28,7 @@ export const initializeWebSocket = (server: http.Server) => {
         currentRound: 0,
         currentPlayer: null,
         currentQuestion: null,
-        totalPositions: 20,
+        totalPositions: 12,
       };
 
       socket.emit("game-created", roomId);

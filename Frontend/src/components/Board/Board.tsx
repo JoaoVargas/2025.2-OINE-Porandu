@@ -23,7 +23,7 @@ const boardColors: Array<ColorSet> = [
 ]
 
 export const GameBoard: React.FC<GameBoardProps> = ({
-  numberOfPositions = 12,
+  numberOfPositions = 25,
   players = [],
 }) => {
   const pathRef = useRef<SVGPathElement>(null)

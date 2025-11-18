@@ -21,7 +21,7 @@ export default function HostScreen() {
       <div className="grid grid-cols-11 grid-rows-11 gap-8 h-full p-8">
         <div className="col-span-8 row-span-8">
           <div className="h-full w-full bg-gray-800 rounded-lg p-4">
-            <GameBoard numberOfPositions={25} players={players} />
+            <GameBoard numberOfPositions={13} players={players} />
           </div>
         </div>
         <div className="col-span-3 row-span-1">
@@ -42,7 +42,7 @@ export default function HostScreen() {
         </div>
         <div className="col-span-3 row-span-4">
           <div className="h-full w-full bg-gray-800 rounded-lg p-4 gap-4 flex flex-col">
-            <span className="text-lg font-bold text-center">
+            <span className="text-xl font-bold text-center">
               Ranking posição
             </span>
             <div className="flex flex-col gap-4 w-full overflow-scroll">
@@ -65,7 +65,7 @@ export default function HostScreen() {
         </div>
         <div className="col-span-3 row-span-4">
           <div className="h-full w-full bg-gray-800 rounded-lg p-4 gap-4 flex flex-col">
-            <span className="text-lg font-bold text-center">
+            <span className="text-xl font-bold text-center">
               Ranking perguntas acertadas
             </span>
             <div className="flex flex-col gap-4 w-full overflow-scroll justify-center">
@@ -90,7 +90,7 @@ export default function HostScreen() {
         </div>
         <div className="col-span-8 row-span-1">
           <div className="h-full w-full bg-gray-800 rounded-lg p-4 items-center text-center">
-            <span className="truncate block">
+            <span className="truncate block text-xl">
               {currentQuestionRef.current?.question}
             </span>
           </div>
@@ -107,7 +107,7 @@ export default function HostScreen() {
                   : 'bg-orange-600/40 text-white/60'
           } rounded-lg p-4 flex justify-center items-center`}
         >
-          <span className="text-xl truncate block">
+          <span className="text-2xl truncate block">
             {currentQuestionRef.current?.options[0]}
           </span>
         </div>
@@ -123,7 +123,7 @@ export default function HostScreen() {
                   : 'bg-blue-600/40 text-white/60'
           } rounded-lg p-4 flex justify-center items-center`}
         >
-          <span className="text-xl truncate block">
+          <span className="text-2xl truncate block">
             {currentQuestionRef.current?.options[1]}
           </span>
         </div>
@@ -139,7 +139,7 @@ export default function HostScreen() {
                   : 'bg-yellow-600/40 text-white/60'
           } rounded-lg p-4 flex justify-center items-center`}
         >
-          <span className="text-xl truncate block">
+          <span className="text-2xl truncate block">
             {currentQuestionRef.current?.options[2]}
           </span>
         </div>
@@ -155,7 +155,7 @@ export default function HostScreen() {
                   : 'bg-purple-600/40 text-white/60'
           } rounded-lg p-4 flex justify-center items-center`}
         >
-          <span className="text-xl truncate block">
+          <span className="text-2xl truncate block">
             {currentQuestionRef.current?.options[3]}
           </span>
         </div>
